@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Banker's Algorithm Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input[type="number"] {
+      width: 50px;
+      margin: 5px;
+    }
+
+    table {
+      width: 100%;
+      margin: 10px 0;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><center>Banker's Algorithm Simulator</center></h1>
+    <center>
+      <label>Processes (P): <input type="number" id="processCount" value="0"></label>
+      <label>Resources (R): <input type="number" id="resourceCount" value="0"></label><br>
+      <button onclick="enterAvailable()">Enter Available Resources</button>
+      <div id="tables"></div>
+      <button onclick="generateMaxAndAlloc()">Enter Max and Allocation Matrices</button>
+      <button onclick="checkSafety()">Check Safe State</button>
+      <div id="result"></div>
+    </center>
+  </div>
+
+  <script>
+    function enterAvailable() {
+      const p = parseInt(document.getElementById("processCount").value);
+      const r = parseInt(document.getElementById("resourceCount").value);
+      const tablesDiv = document.getElementById("tables");
+      tablesDiv.innerHTML = "";
+
+      const availLabel = document.createElement("p");
+      availLabel.innerText = "Step 1: Enter Available Resources:";
+      tablesDiv.appendChild(availLabel);
+
+      for (let j = 0; j < r; j++) {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.id = `avail-${j}`;
+        input.min = 0;
+        input.value = 0;
+        tablesDiv.appendChild(document.createTextNode(`R${j}: `));
+        tablesDiv.appendChild(input);
+      }
+    }
+
+    function generateMaxAndAlloc() {
+      const p = parseInt(document.getElementById("processCount").value);
+      const r = parseInt(document.getElementById("resourceCount").value);
+      const tablesDiv = document.getElementById("tables");
+
+      
+      const maxLabel = document.createElement("p");
+      maxLabel.innerText = "Step 2: Enter Maximum Resource Needs for Each Process:";
+      tablesDiv.appendChild(maxLabel);
+
+      const maxTable = document.createElement("table");
+      maxTable.id = "maxTable";
+
+      const maxHeader = maxTable.insertRow();
+      maxHeader.insertCell().innerText = "Max";
+      for (let j = 0; j < r; j++) {
+        maxHeader.insertCell().innerText = `R${j}`;
+      }
+
+      for (let i = 0; i < p; i++) {
+        const row = maxTable.insertRow();
+        row.insertCell().innerText = `P${i}`;
+        for (let j = 0; j < r; j++) {
+          const cell = row.insertCell();
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = 0;
+          input.value = 0;
+          cell.appendChild(input);
+        }
+      }
+
+      tablesDiv.appendChild(maxTable);
+
+      
+      const allocLabel = document.createElement("p");
+      allocLabel.innerText = "Step 3: Enter Currently Allocated Resources for Each Process:";
+      tablesDiv.appendChild(allocLabel);
+
+      const allocTable = document.createElement("table");
+      allocTable.id = "allocTable";
+
+      const allocHeader = allocTable.insertRow();
+      allocHeader.insertCell().innerText = "Allocation";
+      for (let j = 0; j < r; j++) {
+        allocHeader.insertCell().innerText = `R${j}`;
+      }
+
+      for (let i = 0; i < p; i++) {
+        const row = allocTable.insertRow();
+        row.insertCell().innerText = `P${i}`;
+        for (let j = 0; j < r; j++) {
+          const cell = row.insertCell();
+          const input = document.createElement("input");
+          input.type = "number";
+          input.min = 0;
+          input.value = 0;
+          cell.appendChild(input);
+        }
+      }
+
+      tablesDiv.appendChild(allocTable);
+    }
+
+    function getTableValues(id) {
+      const table = document.getElementById(id);
+      const values = [];
+      for (let i = 1; i < table.rows.length; i++) {
+        const row = [];
+        for (let j = 1; j < table.rows[i].cells.length; j++) {
+          row.push(parseInt(table.rows[i].cells[j].firstChild.value));
+        }
+        values.push(row);
+      }
+      return values;
+    }
+
+    function checkSafety() {
+      const alloc = getTableValues("allocTable");
+      const max = getTableValues("maxTable");
+      const avail = [];
+
+      const r = alloc[0].length;
+      const p = alloc.length;
+      const resultDiv = document.getElementById("result");
+      resultDiv.style.color = "black";
+      resultDiv.innerHTML = "";
+
+      for (let j = 0; j < r; j++) {
+        avail.push(parseInt(document.getElementById(`avail-${j}`).value));
+      }
+
+     
+      for (let i = 0; i < p; i++) {
+        for (let j = 0; j < r; j++) {
+          if (alloc[i][j] > max[i][j]) {
+            resultDiv.style.color = "red";
+            resultDiv.innerHTML = `Error: Allocation for P${i} on R${j} exceeds its maximum.`;
+            return;
+          }
+        }
+      }
+
+      
+      const totalAlloc = Array(r).fill(0);
+      for (let i = 0; i < p; i++) {
+        for (let j = 0; j < r; j++) {
+          totalAlloc[j] += alloc[i][j];
+        }
+      }
+
+      for (let j = 0; j < r; j++) {
+        if (totalAlloc[j] > avail[j] + totalAlloc[j]) {
+          resultDiv.style.color = "red";
+          resultDiv.innerHTML = `Error: Allocated resources for R${j} exceed system capacity.`;
+          return;
+        }
+      }
+
+      const need = alloc.map((row, i) =>
+        row.map((val, j) => max[i][j] - val)
+      );
+
+      const finish = Array(p).fill(false);
+      const work = [...avail];
+      const safeSeq = [];
+
+      let changed;
+      do {
+        changed = false;
+        for (let i = 0; i < p; i++) {
+          if (!finish[i] && need[i].every((n, j) => n <= work[j])) {
+            for (let j = 0; j < r; j++) {
+              work[j] += alloc[i][j];
+            }
+            finish[i] = true;
+            safeSeq.push(`P${i}`);
+            changed = true;
+          }
+        }
+      } while (changed);
+
+      if (safeSeq.length === p) {
+        resultDiv.style.color = "green";
+        resultDiv.innerHTML = `Safe State!<br> Safe Sequence: ${safeSeq.join(" → ")}`;
+      } else {
+        resultDiv.style.color = "red";
+        resultDiv.innerHTML = "Not in a Safe State!";
+      }
+    }
+  </script>
+</body>
+</html>
